@@ -13,16 +13,13 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-// Build an array of allowed origins
-const allowedOrigins = [
-  "http://localhost:5173", // Your local Vite dev server
-  process.env.CLIENT_URL, // Your production frontend URL from Render
-].filter(Boolean); // Removes undefined values if CLIENT_URL isn't set yet
+const allowedOrigins = ["http://localhost:5173", process.env.CLIENT_URL].filter(
+  Boolean,
+);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps or curl requests)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.indexOf(origin) === -1) {
@@ -34,6 +31,12 @@ app.use(
     credentials: true,
   }),
 );
+
+// 🚀 ADD THIS LINE TO AUTOMATICALLY APPROVE PREFLIGHT CHECKS GLOBALLY
+app.options("*", cors());
+
+app.use(express.json({ limit: "10mb" }));
+// ... rest of your code
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
