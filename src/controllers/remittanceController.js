@@ -71,21 +71,26 @@ const createRemittance = async (req, res) => {
       method,
       remittanceDate,
       noted,
-      image,
+      images, // 1. Read the array from the frontend form state
     } = req.body;
 
     const date = remittanceDate ? new Date(remittanceDate) : new Date();
 
-    // 2. Upload the single receipt image to Cloudinary if it's a Base64 string
-    let imageUrl = "";
-    if (image && image.startsWith("data:image")) {
-      const response = await cloudinary.uploader.upload(image, {
-        folder: "remittances",
-        resource_type: "image",
-      });
-      imageUrl = response.secure_url;
-    } else if (image) {
-      imageUrl = image; // Fallback if it's already a URL
+    // 2. Loop through all images and upload Base64 elements to Cloudinary
+    let imageUrls = [];
+    if (images && Array.isArray(images)) {
+      imageUrls = await Promise.all(
+        images.map(async (img) => {
+          if (img && img.startsWith("data:image")) {
+            const response = await cloudinary.uploader.upload(img, {
+              folder: "remittances",
+              resource_type: "image",
+            });
+            return response.secure_url;
+          }
+          return img; // Fallback for pure string internet URLs
+        }),
+      );
     }
 
     const record = await Remittance.create({
@@ -100,7 +105,7 @@ const createRemittance = async (req, res) => {
       year: date.getFullYear(),
       monthNumber: date.getMonth() + 1,
       day: date.getDate(),
-      image: imageUrl, // Save the cloud link
+      images: imageUrls, // 3. Save the completed array into your database
       noted: noted || "",
     });
 
@@ -122,17 +127,24 @@ const updateRemittance = async (req, res) => {
       method,
       remittanceDate,
       noted,
-      image,
+      images, // 1. Read the array from the update payload
     } = req.body;
 
-    // 3. Handle image updates safely
-    let imageUrl = image;
-    if (image && image.startsWith("data:image")) {
-      const response = await cloudinary.uploader.upload(image, {
-        folder: "remittances",
-        resource_type: "image",
-      });
-      imageUrl = response.secure_url;
+    // 2. Safely parse through mixed values (old URLs vs freshly added Base64 strings)
+    let updatedImageUrls = [];
+    if (images && Array.isArray(images)) {
+      updatedImageUrls = await Promise.all(
+        images.map(async (img) => {
+          if (img && img.startsWith("data:image")) {
+            const response = await cloudinary.uploader.upload(img, {
+              folder: "remittances",
+              resource_type: "image",
+            });
+            return response.secure_url;
+          }
+          return img; // Keeps existing Cloudinary string paths intact
+        }),
+      );
     }
 
     const updateFields = {
@@ -143,7 +155,7 @@ const updateRemittance = async (req, res) => {
       recipientRelation,
       method,
       noted,
-      image: imageUrl, // Update database with cloud URL
+      images: updatedImageUrls, // Update database document with complete string array
     };
 
     if (remittanceDate) {
@@ -164,6 +176,7 @@ const updateRemittance = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Remittance not found" });
+
     res.json({ success: true, data: record });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

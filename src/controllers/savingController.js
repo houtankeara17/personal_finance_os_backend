@@ -1,7 +1,6 @@
 const Saving = require("../models/Saving");
 
 // ─── GET /api/savings ────────────────────────────────────────────────────────
-// Query: ?year=2025&monthNumber=3&category=Emergency Pool
 const getSavings = async (req, res) => {
   try {
     const filter = { userId: req.user._id };
@@ -18,7 +17,6 @@ const getSavings = async (req, res) => {
     const totalSaved = savings.reduce((s, r) => s + r.amountUSD, 0);
     const monthlyAvg = savings.length ? totalSaved / savings.length : 0;
 
-    // Totals by category
     const byCategory = savings.reduce((acc, r) => {
       acc[r.category] = (acc[r.category] || 0) + r.amountUSD;
       return acc;
@@ -118,10 +116,25 @@ const deleteSaving = async (req, res) => {
   }
 };
 
+// ─── DELETE /api/savings ─────────────────────────────────────────────────────
+const deleteAllSavings = async (req, res) => {
+  try {
+    const result = await Saving.deleteMany({ userId: req.user._id });
+    res.json({
+      success: true,
+      message: `Deleted ${result.deletedCount} saving record(s).`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 module.exports = {
   getSavings,
   getSaving,
   createSaving,
   updateSaving,
   deleteSaving,
+  deleteAllSavings,
 };

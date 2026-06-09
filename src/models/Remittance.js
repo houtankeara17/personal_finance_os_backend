@@ -68,7 +68,8 @@ const remittanceSchema = new mongoose.Schema(
 
     // --- Proof ---
     // Single image: transfer confirmation, Wing receipt, bank slip
-    image: { type: String, default: "" }, // URL from cloud storage
+    // Change from image: String
+    images: { type: [String], default: [] },
 
     noted: { type: String, default: "" },
   },

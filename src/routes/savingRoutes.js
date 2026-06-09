@@ -7,12 +7,21 @@ const {
   createSaving,
   updateSaving,
   deleteSaving,
+  deleteAllSavings,
 } = require("../controllers/savingController");
 
 router.use(protect);
 
-router.route("/").get(getSavings).post(createSaving);
+router
+  .route("/")
+  .get(getSavings)
+  .post(createSaving)
+  .delete(protect, deleteAllSavings);
 
-router.route("/:id").get(getSaving).put(updateSaving).delete(deleteSaving);
+router
+  .route("/:id")
+  .get(getSaving)
+  .put(updateSaving)
+  .delete(protect, deleteSaving);
 
 module.exports = router;
