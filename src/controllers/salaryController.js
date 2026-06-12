@@ -23,21 +23,30 @@ const buildPeriodFields = (year, monthNumber) => ({
 });
 
 // ─── GET /api/salaries ───────────────────────────────────────────────────────
-// Query: ?year=2025&monthNumber=3&status=Confirmed
+// Query: ?year=2025&monthNumber=3&status=Confirmed or ?year=ALL
 const getSalaries = async (req, res) => {
   try {
     const filter = { userId: req.user._id };
-    if (req.query.year) filter.year = Number(req.query.year);
-    if (req.query.monthNumber)
+
+    // 🔥 FIX: Only filter by year if it's provided AND it's not set to "ALL"
+    if (req.query.year && req.query.year !== "ALL") {
+      filter.year = Number(req.query.year);
+    }
+
+    if (req.query.monthNumber) {
       filter.monthNumber = Number(req.query.monthNumber);
-    if (req.query.status) filter.status = req.query.status;
+    }
+
+    if (req.query.status) {
+      filter.status = req.query.status;
+    }
 
     const salaries = await Salary.find(filter).sort({
       year: -1,
       monthNumber: -1,
     });
 
-    // Summary stats
+    // Summary stats (Works dynamically whether showing one year or ALL historical records)
     const totalEarned = salaries.reduce((s, r) => s + r.amountUSD, 0);
     const monthlyAvg = salaries.length ? totalEarned / salaries.length : 0;
     const highestRecord = salaries.reduce(
